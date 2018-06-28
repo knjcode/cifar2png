@@ -15,7 +15,7 @@ $ pip install cifar2png
 
 `$ cifar2png <dataset> <output_dir>`
 
-- `dataset`: Specify `cifar10` or `cifar100`
+- `dataset`: Specify `cifar10` or `cifar100` or `cifar100superclass`
 - `output_dir`: Path to save PNG converted dataset (The directory will be created automatically).
 
 Automatically download `cifar-10-python.tar.gz` or `cifar-100-python.tar.gz` to the current directory from [CIFAR-10 and CIFAR-100 datasets] when you run this tool.
@@ -34,7 +34,14 @@ Automatically download `cifar-10-python.tar.gz` or `cifar-100-python.tar.gz` to 
 `$ cifar2png cifar100 path/to/cifar100png`
 
 
+## CIFAR-100 with superclass
+
+`$ cifar2png cifar100superclass path/to/cifar100png`
+
+
 # Structure of output directory
+
+## CIFAR-10 and CIFAR-100
 
 PNG images of CIFAR-10 are saved in 10 subdirectories of each label under the `test` and `train` directories as below.  
 (CIFAR-100 are saved in the same way with 100 subdirectories)
@@ -76,6 +83,53 @@ path/to/cifar10png/test/airplane
 ├── 0998.png
 ├── 0999.png
 └── 1000.png
+```
+
+## CIFAR-100 with superclass
+
+PNG images of CIFAR-100 with superclass are saved in each label directories under the superclass subdirectories under the test and train directories as below.
+
+```
+$ tree -d path/to/cifar100png
+path/to/cifar100png
+├── test
+│   ├── aquatic_mammals
+│   │   ├── beaver
+│   │   ├── dolphin
+│   │   ├── otter
+│   │   ├── seal
+│   │   └── whale
+│   ├── fish
+│   │   ├── aquarium_fish
+│   │   ├── flatfish
+│   │   ├── ray
+│   │   ├── shark
+│   │   └── trout
+│   ├── flowers
+│   │   ├── orchid
+│   │   ├── poppy
+│   │   ├── rose
+│   │   ├── sunflower
+│   │   └── tulip
+(..snip..)
+    ├── trees
+    │   ├── maple_tree
+    │   ├── oak_tree
+    │   ├── palm_tree
+    │   ├── pine_tree
+    │   └── willow_tree
+    ├── vehicles_1
+    │   ├── bicycle
+    │   ├── bus
+    │   ├── motorcycle
+    │   ├── pickup_truck
+    │   └── train
+    └── vehicles_2
+        ├── lawn_mower
+        ├── rocket
+        ├── streetcar
+        ├── tank
+        └── tractor
 ```
 
 
