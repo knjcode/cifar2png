@@ -17,10 +17,16 @@ import tarfile
 import requests
 
 try:
-   import cPickle as pickle
+    import cPickle as pickle
 except:
-   import pickle
+    import pickle
 
+try:
+    from itertools import zip_longest
+except:
+    from itertools import izip_longest as zip_longest
+
+from itertools import product
 from collections import defaultdict
 from pathlib import Path
 from PIL import Image
@@ -66,6 +72,37 @@ CIFAR100_LABELS_LIST = [
     'telephone', 'television', 'tiger', 'tractor', 'train', 'trout', 'tulip',
     'turtle', 'wardrobe', 'whale', 'willow_tree', 'wolf', 'woman', 'worm'
 ]
+CIFAR100_SUPERCLASS_LABELS_LIST = [
+    'aquatic_mammals', 'fish', 'flowers', 'food_containers',
+    'fruit_and_vegetables', 'household_electrical_devices',
+    'household_furniture', 'insects', 'large_carnivores',
+    'large_man-made_outdoor_things', 'large_natural_outdoor_scenes',
+    'large_omnivores_and_herbivores', 'medium_mammals',
+    'non-insect_invertebrates', 'people', 'reptiles', 'small_mammals',
+    'trees', 'vehicles_1', 'vehicles_2'
+]
+CIFAR100_CLASSES_LABELS_LIST = [
+    ['beaver', 'dolphin', 'otter', 'seal', 'whale'],
+    ['aquarium_fish', 'flatfish', 'ray', 'shark', 'trout'],
+    ['orchid', 'poppy', 'rose', 'sunflower', 'tulip'],
+    ['bottle', 'bowl', 'can', 'cup', 'plate'],
+    ['apple', 'mushroom', 'orange', 'pear', 'sweet_pepper'],
+    ['clock', 'keyboard', 'lamp', 'telephone', 'television'],
+    ['bed', 'chair', 'couch', 'table', 'wardrobe'],
+    ['bee', 'beetle', 'butterfly', 'caterpillar', 'cockroach'],
+    ['bear', 'leopard', 'lion', 'tiger', 'wolf'],
+    ['bridge', 'castle', 'house', 'road', 'skyscraper'],
+    ['cloud', 'forest', 'mountain', 'plain', 'sea'],
+    ['camel', 'cattle', 'chimpanzee', 'elephant', 'kangaroo'],
+    ['fox', 'porcupine', 'possum', 'raccoon', 'skunk'],
+    ['crab', 'lobster', 'snail', 'spider', 'worm'],
+    ['baby', 'boy', 'girl', 'man', 'woman'],
+    ['crocodile', 'dinosaur', 'lizard', 'snake', 'turtle'],
+    ['hamster', 'mouse', 'rabbit', 'shrew', 'squirrel'],
+    ['maple_tree', 'oak_tree', 'palm_tree', 'pine_tree', 'willow_tree'],
+    ['bicycle', 'bus', 'motorcycle', 'pickup_truck', 'train'],
+    ['lawn_mower', 'rocket', 'streetcar', 'tank', 'tractor']
+]
 
 
 def unpickle(dump):
@@ -102,7 +139,7 @@ def download_with_progress(url, filename):
 def download_cifar(dataset):
     if dataset == 'cifar10':
         download_with_progress(CIFAR10_URL, CIFAR10_TAR_FILENAME)
-    elif dataset == 'cifar100':
+    elif dataset in ['cifar100', 'cifar100superclass']:
         download_with_progress(CIFAR100_URL, CIFAR100_TAR_FILENAME)
 
 
@@ -110,7 +147,7 @@ def check_cifar(dataset):
     if dataset == 'cifar10':
         cifar = Path(CIFAR10_TAR_FILENAME)
         md5sum = CIFAR10_TAR_MD5
-    elif dataset == 'cifar100':
+    elif dataset in ['cifar100', 'cifar100superclass']:
         cifar = Path(CIFAR100_TAR_FILENAME)
         md5sum = CIFAR100_TAR_MD5
 
@@ -131,11 +168,18 @@ def get_data_params(dataset):
         TARFILE = CIFAR10_TAR_FILENAME
         label_data = 'data'
         label_labels = 'labels'
+        label_coarse = None
     elif dataset == 'cifar100':
         TARFILE = CIFAR100_TAR_FILENAME
         label_data = 'data'
         label_labels = 'fine_labels'
-    return TARFILE, label_data, label_labels
+        label_coarse = None
+    elif dataset == 'cifar100superclass':
+        TARFILE = CIFAR100_TAR_FILENAME
+        label_data = 'data'
+        label_labels = 'fine_labels'
+        label_coarse = 'coarse_labels'
+    return TARFILE, label_data, label_labels, label_coarse
 
 
 def get_datanames(dataset, mode):
@@ -144,7 +188,7 @@ def get_datanames(dataset, mode):
             return CIFAR10_TRAIN_DATA_NAMES
         elif mode == 'test':
             return CIFAR10_TEST_DATA_NAMES
-    elif dataset == 'cifar100':
+    elif dataset in ['cifar100', 'cifar100superclass']:
         if mode == 'train':
             return CIFAR100_TRAIN_DATA_NAMES
         elif mode == 'test':
@@ -154,8 +198,9 @@ def get_datanames(dataset, mode):
 def parse_cifar(dataset, mode):
     features = []
     labels = []
+    coarse_labels = []
 
-    TARFILE, label_data, label_labels = get_data_params(dataset)
+    TARFILE, label_data, label_labels, label_coarse = get_data_params(dataset)
     datanames = get_datanames(dataset, mode)
 
     try:
@@ -167,16 +212,20 @@ def parse_cifar(dataset, mode):
             data = unpickle(tf.extractfile(ti))
             features.append(data[label_data])
             labels.append(data[label_labels])
+            if dataset == 'cifar100superclass':
+                coarse_labels.append(data[label_coarse])
         features = np.concatenate(features)
         features = features.reshape(features.shape[0], 3, 32, 32)
         features = features.transpose(0, 2, 3, 1).astype('uint8')
         labels = np.concatenate(labels)
+        if dataset == 'cifar100superclass':
+            coarse_labels = np.concatenate(coarse_labels)
         spinner.stop()
     except KeyboardInterrupt:
         spinner.stop()
         sys.exit(1)
 
-    return features, labels
+    return features, labels, coarse_labels
 
 
 def save_cifar(dataset, output):
@@ -186,19 +235,29 @@ def save_cifar(dataset, output):
     elif dataset == 'cifar100':
         LABELS = CIFAR100_LABELS_LIST
         LABELS_LIST = CIFAR100_LABELS_LIST
+    elif dataset == 'cifar100superclass':
+        LABELS = []
+        for i in zip(CIFAR100_SUPERCLASS_LABELS_LIST, CIFAR100_CLASSES_LABELS_LIST):
+            for j in product([i[0]], i[1]):
+                LABELS.append('/'.join(j))
+        LABELS_LIST = CIFAR100_LABELS_LIST
+        COARSE_LABELS_LIST = CIFAR100_SUPERCLASS_LABELS_LIST
 
     for mode in ['train', 'test']:
         for label in LABELS:
             dirpath = os.path.join(output, mode, label)
             os.system("mkdir -p {}".format(dirpath))
 
-        features, labels = parse_cifar(dataset, mode)
+        features, labels , coarse_labels = parse_cifar(dataset, mode)
 
         label_count = defaultdict(int)
-        for feature, label in tqdm(zip(features, labels), total=len(labels), desc="Saving {} images".format(mode)):
+        for feature, label, coarse_label in tqdm(zip_longest(features, labels, coarse_labels), total=len(labels), desc="Saving {} images".format(mode)):
             label_count[label] += 1
             filename = '%04d.png' % label_count[label]
-            filepath = os.path.join(output, mode, LABELS_LIST[label], filename)
+            if dataset == 'cifar100superclass':
+                filepath = os.path.join(output, mode, COARSE_LABELS_LIST[coarse_label], LABELS_LIST[label], filename)
+            else:
+                filepath = os.path.join(output, mode, LABELS_LIST[label], filename)
             image = Image.fromarray(feature)
             image = image.convert('RGB')
             image.save(filepath)
