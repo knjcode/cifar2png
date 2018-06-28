@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="cifar2png",
-    version="0.0.1",
+    version="0.0.2",
     author="Kenji Doi",
     author_email="knjcode@gmail.com",
     description="Convert CIFAR-10 and CIFAR-100 datasets into PNG images",
