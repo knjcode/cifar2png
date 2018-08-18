@@ -13,20 +13,26 @@ $ pip install cifar2png
 
 # Usage
 
-`$ cifar2png <dataset> <output_dir>`
+`$ cifar2png <dataset> <output_dir> [--name-with-batch-index]`
 
 - `dataset`: Specify `cifar10` or `cifar100` or `cifar100superclass`
 - `output_dir`: Path to save PNG converted dataset (The directory will be created automatically).
+- `--name-with-batch-index`: (optional) Name image files based on batch name and index of cifar10/cifar100 dataset.
 
 Automatically download `cifar-10-python.tar.gz` or `cifar-100-python.tar.gz` to the current directory from [CIFAR-10 and CIFAR-100 datasets] when you run this tool.
 
 
-# Example
+# Examples
 
 
 ## CIFAR-10
 
 `$ cifar2png cifar10 path/to/cifar10png`
+
+
+## CIFAR-10 with naming option
+
+`$ cifar2png cifar10 path/to/cifar10png --name-with-batch-index`
 
 
 ## CIFAR-100
@@ -74,7 +80,7 @@ path/to/cifar10png
 ```
 
 ```bash
-$ tree -d path/to/cifar10png/test/airplane
+$ tree path/to/cifar10png/test/airplane
 path/to/cifar10png/test/airplane
 ├── 0001.png
 ├── 0002.png
@@ -83,6 +89,20 @@ path/to/cifar10png/test/airplane
 ├── 0998.png
 ├── 0999.png
 └── 1000.png
+```
+
+When dataset created using the `--name-with-batch-index` option.
+
+```bash
+$ tree path/to/cifar10png/train/airplane
+path/to/cifar10png/train/airplane
+├── data_batch_1_index_0029.png
+├── data_batch_1_index_0030.png
+├── data_batch_1_index_0035.png
+(..snip..)
+├── data_batch_5_index_9941.png
+├── data_batch_5_index_9992.png
+└── data_batch_5_index_9994.png
 ```
 
 ## CIFAR-100 with superclass
