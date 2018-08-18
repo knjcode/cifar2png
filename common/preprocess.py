@@ -199,6 +199,7 @@ def parse_cifar(dataset, mode):
     features = []
     labels = []
     coarse_labels = []
+    batch_names = []
 
     TARFILE, label_data, label_labels, label_coarse = get_data_params(dataset)
     datanames = get_datanames(dataset, mode)
@@ -212,6 +213,7 @@ def parse_cifar(dataset, mode):
             data = unpickle(tf.extractfile(ti))
             features.append(data[label_data])
             labels.append(data[label_labels])
+            batch_names.extend([dataname.split('/')[1]] * len(data[label_data]))
             if dataset == 'cifar100superclass':
                 coarse_labels.append(data[label_coarse])
         features = np.concatenate(features)
@@ -225,10 +227,12 @@ def parse_cifar(dataset, mode):
         spinner.stop()
         sys.exit(1)
 
-    return features, labels, coarse_labels
+    return features, labels, coarse_labels, batch_names
 
 
-def save_cifar(dataset, output):
+def save_cifar(args):
+    dataset = args.dataset
+    output = args.output
     if dataset == 'cifar10':
         LABELS = CIFAR10_LABELS_LIST
         LABELS_LIST = CIFAR10_LABELS_LIST
@@ -248,12 +252,21 @@ def save_cifar(dataset, output):
             dirpath = os.path.join(output, mode, label)
             os.system("mkdir -p {}".format(dirpath))
 
-        features, labels , coarse_labels = parse_cifar(dataset, mode)
+        features, labels , coarse_labels, batch_names = parse_cifar(dataset, mode)
 
         label_count = defaultdict(int)
-        for feature, label, coarse_label in tqdm(zip_longest(features, labels, coarse_labels), total=len(labels), desc="Saving {} images".format(mode)):
+        batch_count = defaultdict(int)
+        for feature, label, coarse_label, batch_name in tqdm(zip_longest(features, labels, coarse_labels, batch_names), total=len(labels), desc="Saving {} images".format(mode)):
             label_count[label] += 1
-            filename = '%04d.png' % label_count[label]
+            if args.name_with_batch_index:
+                if args.dataset == 'cifar10':
+                    filename = '%s_index_%04d.png' % (batch_name, batch_count[batch_name])
+                else:
+                    filename = '%s_index_%05d.png' % (batch_name, batch_count[batch_name])
+            else:
+                filename = '%04d.png' % label_count[label]
+            batch_count[batch_name] += 1
+
             if dataset == 'cifar100superclass':
                 filepath = os.path.join(output, mode, COARSE_LABELS_LIST[coarse_label], LABELS_LIST[label], filename)
             else:
