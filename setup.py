@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="cifar2png",
-    version="0.0.3",
+    version="0.0.4",
     author="Kenji Doi",
     author_email="knjcode@gmail.com",
     description="Convert CIFAR-10 and CIFAR-100 datasets into PNG images",
@@ -15,8 +15,8 @@ setuptools.setup(
     install_requires=[
         'numpy',
         'pathlib',
-        'Pillow',
-        'requests',
+        'Pillow>=6.2.0',
+        'requests>=2.20.0',
         'six',
         'tqdm',
     ],
