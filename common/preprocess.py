@@ -246,11 +246,16 @@ def save_cifar(args):
                 LABELS.append('/'.join(j))
         LABELS_LIST = CIFAR100_LABELS_LIST
         COARSE_LABELS_LIST = CIFAR100_SUPERCLASS_LABELS_LIST
-
+    
+    if not os.path.exists(output):
+        os.mkdir("{}".format(output))
+        
     for mode in ['train', 'test']:
+        dirpath = os.path.join(output, mode)
+        os.mkdir("{}".format(dirpath))
         for label in LABELS:
             dirpath = os.path.join(output, mode, label)
-            os.system("mkdir -p {}".format(dirpath))
+            os.mkdir("{}".format(dirpath))
 
         features, labels , coarse_labels, batch_names = parse_cifar(dataset, mode)
 
@@ -273,4 +278,5 @@ def save_cifar(args):
                 filepath = os.path.join(output, mode, LABELS_LIST[label], filename)
             image = Image.fromarray(feature)
             image = image.convert('RGB')
+            #with open(filepath, 'w+b') as f:
             image.save(filepath)
